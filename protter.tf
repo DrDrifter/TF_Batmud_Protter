@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                     ;
-; Modified & currently maintained by Drifter (during 2001-2011)       ;
+; Modified & currently maintained by Drifter (during 2001-2014)       ;
 ;                                                                     ;
 ; Haven't got a decent changelog since I've lost my trigs twice, and  ;
 ; afterwards I can't remember all the stuffs that I made later on.    ;
@@ -13,23 +13,26 @@
 ;                                                                     ;
 ; What it supports:                                                   ;
 ; - All prots that are castable to another player and have some       ;
-;   up and downmessage                                                ;
+;   kind of up and downmessage                                        ;
 ; - Sticky conjuprots                                                 ;
+; - Some effects from items (Caster might bug)                        ;
+; - Skills that have up/downmessages                                  ;
 ;                                                                     ;
 ; What it doesn't support:                                            ;
 ; - Guild-specific prots (eg. barb prots are in bat-barb.tf)          ;
-; - Prots gained through items/potions (theyse might work if the      ;
+; - Prots gained through items/potions (these might work if the       ;
 ;   up/downmessage is the same as with the "original" spell.          ;
 ; - At the moment, stackable prots are disabled                       ;
 ;                                                                     ;
 ; I'll try to keep a changelog here of the version changes            ;
 ;                                                                     ;
-; Last modified 24.07.2013                                            ;
+; Last modified 04.12.2014 (4th Jan 2014 for you Yankees)             ;
 ;                                                                     ;
-; Current Version 1.3.31                                              ;
+; Current Version 1.3.32                                              ;
+; - Added support for messages to display after you have camped       ;
+;                                                                     ;
+; Changes to 1.3.31                                                   ;
 ; - Added missing chant words to Soul Shield                          ;
-;                                                                     ;
-; Changes to 1.3.30                                                   ;
 ;                                                                     ;
 ; Changes to 1.3.30                                                   ;
 ; - Fixed Regeneration spell typo                                     ;
@@ -205,6 +208,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 /require textutil.tf
+/require stack-q.tf
 ; Path of where prot average times are stored,
 ; note that if you can't write or don't want to write avg time,
 ; just use /dev/null on this
@@ -216,7 +220,7 @@
 ;When we dont know who casts rather print "unknown" than some weirdo
 /set pcaster=Unknown
 /set matching=glob
-
+/set camping_status=awake
 
 ;; Converts seconds into minutes and seconds, very useful
 /def -i formattime=\
@@ -308,10 +312,6 @@
 ;
 ; Note: If protter messes up your spellquote too badly, change the priority value
 ; here or add -F, since the macro is non-fall thru.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; You lie down for a short rest, soothed by the lullaby sung by xxx. ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 /def createprot=\
 ; /if (!getopts("w:p:n:u:d:t:sc", "0")) /break%;/endif%;\   /* Old style, non regexp line. */
@@ -461,6 +461,16 @@
    /let count=$[count+1]%;\
   /endif%; \
  /done
+
+;; Separate function for messaging
+;; This is to check if you are camping/meditating and messages will not go to p channel
+/def -i msgprot = \
+ /let msg=%1%;\
+ /if (camp_status=~"sleeping") \
+  /push %msg campmessages%;\
+ /else \
+  @party %output $msg%;\
+ /endif
 
 ;; Death removes some prots
 ;; Not sure about Soul shield, someone check it out?
@@ -747,6 +757,11 @@
 ; Quick binds to commands
 /def -i -h'SEND protx' tarkista=/check
 /def -i -h'SEND prp' tarkistap=/check p
+
+; Set camping status for messages
+/def -i -t"You lie down and begin to rest for a while." camp_status_sleeping=/set camp_status=sleeping
+/def -i -t"You awaken from your short rest, and feel slightly better." camp_status_ready=/set camp_status=awake
+/def -i -t"You lie down for a short rest, soothed by the lullaby sung by *." camp_status_sleeping=/set camp_status=sleeping
 
 ; Reflector shield, possible to cast to players?
 ;{*} utters the magic words 'sakat ikkiak satsjaieh'
